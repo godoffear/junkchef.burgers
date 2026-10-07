@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#c9602f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Burger Shop</title>
+<style>
+:root {
+  --bg: #f6f1ea; --surface: #fffdfa; --surface-2: #f3ece2;
+  --text: #2b2622; --text-2: #5a5149; --text-3: #7a7068;
+  --border: #e4dacd;
+  --primary: #b84d1f; --primary-hover: #a34419; --on-primary: #fff; --primary-soft: #f9e5da;
+  --ok-bg: #e1f1e8; --ok-fg: #1f6a43;
+  --warn-bg: #fbefd9; --warn-fg: #7a4f0d;
+  --bad-bg: #f8e5e3; --bad-fg: #8f3029;
+  --info-bg: #e1edf6; --info-fg: #2a5a85;
+  --shadow: 0 2px 8px rgba(60,40,20,.08);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1815; --surface: #272220; --surface-2: #322c28;
+    --text: #f3ede6; --text-2: #cfc4b9; --text-3: #a79b8f;
+    --border: #413933;
+    --primary: #e8825a; --primary-hover: #f0956f; --on-primary: #2a1409; --primary-soft: #3d2a21;
+    --ok-bg: #1f3a2b; --ok-fg: #8fd9ae;
+    --warn-bg: #43341a; --warn-fg: #f0c978;
+    --bad-bg: #44251f; --bad-fg: #f1a79f;
+    --info-bg: #1f3345; --info-fg: #9cc7ec;
+    --shadow: 0 2px 8px rgba(0,0,0,.35);
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.45; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; border: none; background: none; }
+:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+
+.app { max-width: 1000px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; }
+.topbar { position: sticky; top: 0; z-index: 20; background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { font-weight: 800; font-size: 18px; }
+.today { text-align: right; font-size: 13px; color: var(--text-2); line-height: 1.25; }
+.today b { display: block; font-size: 16px; color: var(--text); }
+
+main { flex: 1; padding: 14px 16px 150px; }
+.view { display: none; } .view.on { display: block; }
+
+h2 { font-size: 17px; margin: 4px 0 10px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 14px; box-shadow: var(--shadow); }
+.muted { color: var(--text-2); font-size: 13px; }
+.empty { text-align: center; padding: 24px 12px; color: var(--text-2); }
+.empty .big { font-size: 34px; margin-bottom: 6px; }
+
+/* buttons */
+.btn { min-height: 44px; padding: 10px 16px; border-radius: 10px; font-weight: 700; background: var(--primary); color: var(--on-primary); }
+.btn:hover { background: var(--primary-hover); }
+.btn.ghost { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
+.btn.ghost:hover { background: var(--primary-soft); }
+.btn.block { width: 100%; }
+.btn.sm { min-height: 36px; padding: 6px 12px; font-size: 14px; }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.icon-btn { width: 44px; height: 44px; border-radius: 10px; background: var(--surface-2); font-size: 20px; font-weight: 700; }
+.icon-btn:hover { background: var(--primary-soft); }
+
+/* chips / segmented */
+.chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 12px; scrollbar-width: none; }
+.chip { flex: none; min-height: 40px; padding: 8px 14px; border-radius: 999px; background: var(--surface); border: 1.5px solid var(--border); font-weight: 600; font-size: 14px; color: var(--text-2); }
+.chip.on { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.chip .n { display: inline-block; min-width: 20px; margin-left: 6px; padding: 0 6px; border-radius: 999px; background: rgba(0,0,0,.12); font-size: 12px; }
+
+/* orders layout */
+.orders-grid { display: block; }
+.sub { display: none; } .sub.on { display: block; }
+@media (min-width: 860px) {
+  .orders-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 20px; align-items: start; }
+  .sub { display: block !important; }
+  .seg { display: none; }
+}
+
+/* menu tiles */
+.tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+@media (min-width: 560px) { .tiles { grid-template-columns: repeat(3, 1fr); } }
+.tile-wrap { position: relative; }
+.tile { width: 100%; min-height: 112px; background: var(--surface); border: 2px solid var(--border); border-radius: 14px; padding: 12px 8px; text-align: center; box-shadow: var(--shadow); }
+.tile:active { transform: scale(.97); }
+.tile.has { border-color: var(--primary); background: var(--primary-soft); }
+.tile .em { font-size: 30px; line-height: 1.1; }
+.tile .nm { font-weight: 700; margin-top: 4px; }
+.tile .pr { color: var(--text-2); font-size: 14px; }
+.tile.off { opacity: .5; cursor: not-allowed; }
+.tile .stop { font-size: 12px; color: var(--bad-fg); font-weight: 700; }
+.qty-badge { position: absolute; top: 6px; left: 6px; min-width: 26px; height: 26px; border-radius: 13px; background: var(--primary); color: var(--on-primary); font-weight: 800; font-size: 14px; display: grid; place-items: center; padding: 0 7px; pointer-events: none; }
+.minus { position: absolute; top: 4px; right: 4px; width: 36px; height: 36px; border-radius: 50%; background: var(--surface); border: 1.5px solid var(--primary); color: var(--primary); font-size: 20px; font-weight: 800; }
+
+/* order cards */
+.order { background: var(--surface); border: 1px solid var(--border); border-left: 5px solid var(--info-fg); border-radius: 12px; padding: 12px; margin-bottom: 10px; box-shadow: var(--shadow); }
+.order.cook { border-left-color: var(--warn-fg); } .order.ready { border-left-color: var(--ok-fg); }
+.order.late { border-left-color: var(--bad-fg); }
+.o-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-weight: 800; }
+.o-sub { font-size: 13px; color: var(--text-2); margin-top: 2px; }
+.o-items { margin: 8px 0; padding: 8px 10px; background: var(--surface-2); border-radius: 8px; font-size: 14px; }
+.o-items div { display: flex; justify-content: space-between; gap: 8px; }
+.o-note { font-size: 13px; color: var(--warn-fg); background: var(--warn-bg); padding: 6px 10px; border-radius: 8px; margin-bottom: 8px; }
+.o-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.o-total { font-weight: 800; }
+.o-actions { display: flex; gap: 8px; margin-top: 8px; }
+.o-actions .btn { flex: 1; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--surface-2); color: var(--text-2); white-space: nowrap; }
+.b-new { background: var(--info-bg); color: var(--info-fg); } .b-cook { background: var(--warn-bg); color: var(--warn-fg); }
+.b-ready, .b-ok { background: var(--ok-bg); color: var(--ok-fg); } .b-bad { background: var(--bad-bg); color: var(--bad-fg); }
+.timer.late { color: var(--bad-fg); font-weight: 800; }
+
+/* cart bar & sheet */
+.cartbar { position: fixed; left: 0; right: 0; bottom: calc(64px + env(safe-area-inset-bottom)); z-index: 25; padding: 0 12px; pointer-events: none; }
+.cartbar .inner { max-width: 976px; margin: 0 auto; pointer-events: auto; }
+.cartbar button { width: 100%; display: flex; justify-content: space-between; align-items: center; min-height: 54px; padding: 0 18px; border-radius: 14px; background: var(--primary); color: var(--on-primary); font-weight: 800; box-shadow: 0 6px 18px rgba(0,0,0,.28); }
+.sheet-bg { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 40; display: none; align-items: flex-end; justify-content: center; }
+.sheet-bg.on { display: flex; }
+.sheet { background: var(--surface); width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; border-radius: 18px 18px 0 0; padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); animation: up .22s ease-out; }
+@media (min-width: 700px) { .sheet-bg { align-items: center; } .sheet { border-radius: 18px; } }
+@keyframes up { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+.sheet-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.cart-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.cart-row .nm { font-weight: 600; }
+.stepper { display: flex; align-items: center; gap: 6px; }
+.stepper .icon-btn { width: 38px; height: 38px; font-size: 18px; }
+.stepper b { min-width: 24px; text-align: center; }
+label.f { display: block; font-size: 13px; font-weight: 600; color: var(--text-2); margin: 12px 0 4px; }
+input[type=text], input[type=number], input:not([type]) { width: 100%; min-height: 44px; padding: 8px 12px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--bg); }
+input:focus { outline: none; border-color: var(--primary); }
+.total-line { display: flex; justify-content: space-between; font-size: 18px; font-weight: 800; margin: 14px 0 10px; }
+
+/* stats */
+.stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+@media (min-width: 700px) { .stats { grid-template-columns: repeat(4, 1fr); } }
+.stat { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px; box-shadow: var(--shadow); }
+.stat .l { font-size: 13px; color: var(--text-2); }
+.stat .v { font-size: 22px; font-weight: 800; }
+.bar-row { margin: 10px 0; }
+.bar-row .top { display: flex; justify-content: space-between; font-size: 14px; }
+.bar { height: 10px; border-radius: 5px; background: var(--surface-2); overflow: hidden; margin-top: 4px; }
+.bar i { display: block; height: 100%; background: var(--primary); border-radius: 5px; }
+.hist { display: flex; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+.hist:last-child { border-bottom: none; }
+
+/* menu / stock rows */
+.row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.row:last-child { border-bottom: none; }
+.row .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+.row small { color: var(--text-2); font-size: 12px; }
+.switch { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; min-height: 44px; }
+.switch input { width: 44px; height: 26px; accent-color: var(--ok-fg); }
+.form-grid { display: grid; grid-template-columns: 70px 1fr; gap: 8px; }
+.danger { color: var(--bad-fg); }
+
+.prep-sum { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+.pcard { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.pcard:last-child { border-bottom: none; }
+.pcard .hd { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pcard .need { margin: 6px 0; font-size: 14px; }
+.pcard .need b { color: var(--bad-fg); }
+.meter { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; margin: 6px 0; }
+.meter i { display: block; height: 100%; background: var(--ok-fg); border-radius: 4px; }
+.meter i.low { background: var(--bad-fg); }
+.pact { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.pact .btn { flex: 1 1 auto; }
+.pact input[type=date] { width: auto; flex: 0 1 150px; min-height: 36px; padding: 4px 8px; font-size: 14px; }
+.ing { border: 1px solid var(--border); border-radius: 12px; padding: 10px; margin-bottom: 10px; background: var(--bg); }
+.ing-top { display: grid; grid-template-columns: 1fr 44px; gap: 8px; margin-bottom: 8px; }
+.ing-grid { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); margin-top: 8px; }
+.ing label small, .tcmeta label small { display: block; color: var(--text-2); font-size: 12px; margin-bottom: 2px; }
+select, textarea { width: 100%; min-height: 44px; padding: 8px 10px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--surface); }
+textarea { min-height: 80px; resize: vertical; }
+.tc-tot { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0; }
+.tc-tot div { background: var(--surface-2); border-radius: 10px; padding: 8px 6px; text-align: center; }
+.tc-tot b { display: block; font-size: 17px; }
+.tc-tot span { font-size: 12px; color: var(--text-2); }
+.tc-card { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.tc-card:last-child { border-bottom: none; }
+.tc-line { font-size: 14px; color: var(--text-2); margin: 4px 0 8px; }
+.tc-line b { color: var(--text); }
+/* bottom nav */
+.nav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 30; background: var(--surface); border-top: 1px solid var(--border); padding-bottom: env(safe-area-inset-bottom); }
+.nav-in { max-width: 1000px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); }
+.nav button { position: relative; min-height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px; font-weight: 700; color: var(--text-3); }
+.nav button .ic { font-size: 22px; line-height: 1; }
+.nav button.on { color: var(--primary); }
+.nav button.on::before { content: ''; position: absolute; top: 0; left: 25%; right: 25%; height: 3px; border-radius: 0 0 3px 3px; background: var(--primary); }
+.nav .dot { position: absolute; top: 6px; left: calc(50% + 8px); min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--bad-fg); color: #fff; font-size: 11px; display: grid; place-items: center; }
+@media (prefers-color-scheme: dark) { .nav .dot { background: #e5645a; } }
+
+.toast { position: fixed; left: 12px; right: 12px; bottom: calc(150px + env(safe-area-inset-bottom)); z-index: 60; max-width: 520px; margin: 0 auto; background: #2b2622; color: #fff; padding: 12px 14px; border-radius: 12px; display: none; align-items: center; justify-content: space-between; gap: 12px; box-shadow: 0 6px 20px rgba(0,0,0,.35); font-weight: 600; }
+.toast.on { display: flex; }
+.toast button { color: #ffb08e; font-weight: 800; padding: 6px 10px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">🍔 Burger Shop</div>
+    <div class="today"><span id="top-label">Сегодня</span><b id="top-sum">0 ₫</b></div>
+  </header>
+
+  <main>
+    <!-- ЗАКАЗЫ -->
+    <section class="view on" id="v-orders">
+      <div class="chips seg" id="seg">
+        <button class="chip on" data-sub="new">➕ Новый заказ</button>
+        <button class="chip" data-sub="queue">🧾 Очередь <span class="n" id="seg-n">0</span></button>
+      </div>
+      <div class="orders-grid">
+        <div class="sub on" id="sub-new">
+          <h2>Выберите блюда</h2>
+          <div class="tiles" id="tiles"></div>
+        </div>
+        <div class="sub" id="sub-queue">
+          <h2>Очередь заказов</h2>
+          <div class="chips" id="filters"></div>
+          <div id="queue"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ПРОДАЖИ -->
+    <section class="view" id="v-sales">
+      <div class="chips" id="period">
+        <button class="chip on" data-p="day">Сегодня</button>
+        <button class="chip" data-p="week">7 дней</button>
+        <button class="chip" data-p="all">Всё время</button>
+      </div>
+      <div class="stats" id="stats"></div>
+      <div class="card"><h2>🏆 Что продаётся лучше</h2><div id="top"></div></div>
+      <div class="card"><h2>✅ Проданные заказы</h2><div id="hist"></div>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn ghost sm" data-act="csv">Скопировать таблицу (CSV)</button>
+          <button class="btn ghost sm" data-act="demo">Загрузить демо-заказы</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- МЕНЮ -->
+    <section class="view" id="v-menu">
+      <div class="chips" id="mseg"><button class="chip on" data-msub="list">Блюда и цены</button><button class="chip" data-msub="tc">Технологические карты</button></div>
+      <div id="m-tc" hidden>
+        <div class="card"><h2>📖 Технологические карты</h2>
+          <p class="muted">Состав блюда, КБЖУ на порцию, себестоимость и наценка. Цены и КБЖУ в примерах ориентировочные: проверьте по упаковкам. Когда заказ продан, продукты списываются со склада по этим картам.</p>
+          <div id="tc-list"></div>
+        </div>
+      </div>
+      <div id="m-list">
+      <div class="card"><h2>Меню и цены</h2>
+        <p class="muted">Меняйте цену прямо в поле. Выключатель «Есть» убирает блюдо с кассы (стоп-лист).</p>
+        <div id="menu-list"></div>
+      </div>
+      <div class="card"><h2>➕ Новое блюдо</h2>
+        <div class="form-grid"><input id="nm-em" placeholder="🍔" maxlength="4" aria-label="Эмодзи"><input id="nm-name" placeholder="Название" aria-label="Название"></div>
+        <label class="f" for="nm-price">Цена, ₫</label><input id="nm-price" type="number" inputmode="numeric" placeholder="165000">
+        <button class="btn block" style="margin-top:12px" data-act="add-dish">Добавить в меню</button>
+      </div>
+      <button class="btn ghost block" data-act="reset"><span class="danger">Сбросить все данные</span></button>
+      </div>
+    </section>
+
+    <!-- ЗАГОТОВКИ -->
+    <section class="view" id="v-prep">
+      <div class="prep-sum" id="prep-sum"></div>
+      <div class="card"><h2>🔪 Заготовки на смену</h2>
+        <p class="muted">Сверху то, что нужно сделать в первую очередь: закончилось, мало или скоро истекает срок.</p>
+        <div id="prep-list"></div>
+      </div>
+      <div class="card"><h2>➕ Новая заготовка</h2>
+        <input id="pp-name" placeholder="Название (например, Соус)" aria-label="Название заготовки">
+        <div class="form-grid" style="grid-template-columns:1fr 1fr;margin-top:8px">
+          <input id="pp-qty" type="number" inputmode="decimal" placeholder="Сейчас есть" aria-label="Сейчас есть">
+          <input id="pp-unit" placeholder="кг / шт / л" aria-label="Единица">
+          <input id="pp-par" type="number" inputmode="decimal" placeholder="Нужно на смену" aria-label="Нужно на смену">
+          <input id="pp-batch" type="number" inputmode="decimal" placeholder="Размер партии" aria-label="Размер партии">
+        </div>
+        <label class="f" for="pp-shelf">Срок годности, дней</label><input id="pp-shelf" type="number" inputmode="numeric" placeholder="2">
+        <button class="btn block" style="margin-top:12px" data-act="add-prep">Добавить заготовку</button>
+      </div>
+    </section>
+
+    <!-- СКЛАД -->
+    <section class="view" id="v-stock">
+      <div id="stock-alert"></div>
+      <div class="card" id="shop-card" hidden><h2>🛒 Список покупок</h2><div class="muted" style="margin-bottom:8px">Докупить до двойного минимума</div><div id="shop-list"></div>
+        <button class="btn block" style="margin-top:12px" data-act="shop-copy">Скопировать список</button></div>
+      <div class="card"><h2>📦 Остатки</h2><div id="stock-list"></div></div>
+      <div class="card"><h2>➕ Новая позиция</h2>
+        <input id="st-name" placeholder="Название (например, Сыр)" aria-label="Название">
+        <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr;margin-top:8px">
+          <input id="st-qty" type="number" inputmode="decimal" placeholder="Остаток" aria-label="Остаток">
+          <input id="st-unit" placeholder="кг / шт" aria-label="Единица">
+          <input id="st-min" type="number" inputmode="decimal" placeholder="Минимум" aria-label="Минимум">
+        </div>
+        <button class="btn block" style="margin-top:12px" data-act="add-stock">Добавить на склад</button>
+      </div>
+    </section>
+  </main>
+
+  <div class="cartbar" id="cartbar" hidden><div class="inner"><button data-act="open-cart"><span id="cb-l">🛒 0 поз.</span><span id="cb-r">Оформить →</span></button></div></div>
+
+  <nav class="nav"><div class="nav-in">
+    <button class="on" data-view="orders"><span class="ic">🧾</span>Заказы<span class="dot" id="nav-dot" hidden>0</span></button>
+    <button data-view="sales"><span class="ic">💵</span>Продажи</button>
+    <button data-view="menu"><span class="ic">📋</span>Меню</button>
+    <button data-view="prep"><span class="ic">🔪</span>Заготовки<span class="dot" id="prep-dot" hidden>0</span></button>
+    <button data-view="stock"><span class="ic">📦</span>Склад<span class="dot" id="stock-dot" hidden>0</span></button>
+  </div></nav>
+</div>
+
+<div class="sheet-bg" id="sheet-bg"><div class="sheet" role="dialog" aria-modal="true" aria-label="Оформление заказа" id="sheet"></div></div>
+<div class="toast" id="toast" role="status"><span id="toast-t"></span><button id="toast-u" hidden>Отменить</button></div>
+
+<script>
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const money = n => Math.round(n).toLocaleString('ru-RU') + ' ₫';
+const KEY = 'burger-app-v2';
+const LATE_MIN = 15;
+
+const DAY = 864e5;
+const eod = d => { const x = new Date(d); x.setHours(23, 59, 59, 999); return x.getTime(); };
+const PREP_SEED = () => { const n = Date.now(); return [
+  { id: 1, name: 'Котлеты (сырые)', qty: 12, unit: 'шт', par: 40, batch: 20, shelf: 2, exp: eod(n + DAY) },
+  { id: 2, name: 'Фирменный соус', qty: 1.2, unit: 'л', par: 2, batch: 1, shelf: 5, exp: eod(n + 3 * DAY) },
+  { id: 3, name: 'Нарезанный лук', qty: 0.8, unit: 'кг', par: 1.5, batch: 1, shelf: 1, exp: eod(n) },
+  { id: 4, name: 'Маринованные огурцы', qty: 2, unit: 'кг', par: 1, batch: 2, shelf: 14, exp: eod(n + 10 * DAY) }
+]; };
+const I = (name, qty, unit, kcal, p, f, c, price, stockId, w) => ({ name, qty, unit, kcal, p, f, c, price, stockId: stockId || null, w: w || 0 });
+const TC_SEED = {
+  1: { time: 10, steps: 'Обжарить котлету по 4 минуты с каждой стороны. Собрать: булка, салат, помидор, огурец, котлета.', ings: [I('Булка', 1, 'шт', 199, 6.8, 2.4, 36.8, 6000, 1, 75), I('Фарш говяжий', 200, 'г', 250, 17, 20, 0, 200000, 2), I('Огурец', 20, 'г', 15, .8, .1, 2.8, 25000, 3), I('Помидор', 15, 'г', 20, .9, .2, 4.2, 30000, 4), I('Салат', 10, 'г', 14, 1.4, .2, 2, 60000)] },
+  2: { time: 15, steps: 'Две котлеты по 200 г, обжарить по 4 минуты с каждой стороны. Собрать как классический.', ings: [I('Булка', 1, 'шт', 199, 6.8, 2.4, 36.8, 6000, 1, 75), I('Фарш говяжий', 400, 'г', 250, 17, 20, 0, 200000, 2), I('Огурец', 30, 'г', 15, .8, .1, 2.8, 25000, 3), I('Помидор', 25, 'г', 20, .9, .2, 4.2, 30000, 4), I('Салат', 15, 'г', 14, 1.4, .2, 2, 60000)] },
+  3: { time: 12, steps: 'Грибы обжарить 5 минут. Собрать: булка, салат, овощи, грибы, авокадо.', ings: [I('Булка', 1, 'шт', 199, 6.8, 2.4, 36.8, 6000, 1, 75), I('Грибы', 120, 'г', 27, 3.1, .3, 3.3, 90000), I('Авокадо', 30, 'г', 160, 2, 15, 9, 120000), I('Овощи', 50, 'г', 30, 1.5, .3, 6, 40000), I('Салат', 15, 'г', 14, 1.4, .2, 2, 60000)] },
+  4: { time: 5, steps: 'Картофель нарезать, обжарить во фритюре 4 минуты, посолить, добавить специи.', ings: [I('Картофель', 250, 'г', 77, 2, .1, 17, 25000, 5), I('Масло (впитывается)', 15, 'мл', 884, 0, 100, 0, 60000), I('Специи', 2, 'г', 250, 10, 5, 50, 300000)] }
+};
+const SEED = () => ({
+  menu: [
+    { id: 1, em: '🍔', name: 'Классический', price: 165000, cost: 6600, on: true, tc: JSON.parse(JSON.stringify(TC_SEED[1])) },
+    { id: 2, em: '🔥', name: 'Двойной', price: 245000, cost: 9800, on: true, tc: JSON.parse(JSON.stringify(TC_SEED[2])) },
+    { id: 3, em: '🌱', name: 'Овощной', price: 135000, cost: 5400, on: true, tc: JSON.parse(JSON.stringify(TC_SEED[3])) },
+    { id: 4, em: '🍟', name: 'Картофель', price: 75000, cost: 3000, on: true, tc: JSON.parse(JSON.stringify(TC_SEED[4])) }
+  ],
+  stock: [
+    { id: 1, name: 'Булка', qty: 145, unit: 'шт', min: 80 },
+    { id: 2, name: 'Фарш', qty: 6.8, unit: 'кг', min: 5 },
+    { id: 3, name: 'Огурец', qty: 1.8, unit: 'кг', min: 2 },
+    { id: 4, name: 'Помидор', qty: 3.1, unit: 'кг', min: 2 },
+    { id: 5, name: 'Картофель', qty: 8.5, unit: 'кг', min: 5 }
+  ],
+  preps: PREP_SEED(),
+  orders: [], seq: { menu: 5, stock: 6, order: 1, prep: 5 }
+});
+
+let S;
+try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
+if (!S || !S.menu) S = SEED();
+S.menu.forEach(m => { if (!m.tc) m.tc = TC_SEED[m.id] && SEED().menu.find(x => x.id === m.id && x.name === m.name) ? JSON.parse(JSON.stringify(TC_SEED[m.id])) : { time: 0, steps: '', ings: [] }; });
+if (!S.preps) { S.preps = PREP_SEED(); S.seq.prep = 5; }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+
+let cart = {};                       // dishId -> qty
+let meta = { client: '', type: 'here', note: '' };
+let view = 'orders', sub = 'new', filter = 'all', period = 'day';
+
+const STATUS = {
+  new:   { label: 'Новый',     cls: 'b-new',   act: 'Взять в работу' },
+  cook:  { label: 'Готовится', cls: 'b-cook',  act: 'Готов к выдаче' },
+  ready: { label: 'Готов',     cls: 'b-ready', act: 'Выдан · продан ✓' }
+};
+const FLOW = ['new', 'cook', 'ready', 'sold'];
+
+/* ---------- helpers ---------- */
+const orderSum = o => o.items.reduce((t, i) => t + i.price * i.qty, 0);
+const orderCost = o => o.items.reduce((t, i) => t + (i.cost || 0) * i.qty, 0);
+const minsAgo = t => Math.max(0, Math.floor((Date.now() - t) / 60000));
+const startOf = p => {
+  const d = new Date(); d.setHours(0, 0, 0, 0);
+  if (p === 'week') d.setDate(d.getDate() - 6);
+  return p === 'all' ? 0 : d.getTime();
+};
+const soldIn = p => S.orders.filter(o => o.status === 'sold' && o.sold >= startOf(p));
+const cartItems = () => S.menu.filter(m => cart[m.id] > 0).map(m => ({ id: m.id, name: m.em + ' ' + m.name, price: m.price, cost: menuCost(m), qty: cart[m.id] }));
+const prepState = p => {
+  if (p.qty > 0 && p.exp) {
+    if (p.exp < Date.now()) return { k: 'bad', t: 'Просрочено', rank: 0 };
+    if (p.exp <= eod(Date.now())) return { k: 'bad', t: 'Истекает сегодня', rank: 1 };
+    if (p.exp <= eod(Date.now() + DAY)) return { k: 'warn', t: 'Истекает завтра', rank: 3 };
+  }
+  return { k: 'ok', t: p.exp && p.qty > 0 ? 'Годно до ' + new Date(p.exp).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }) : 'Нет в запасе', rank: 5 };
+};
+const prepNeed = p => Math.max(0, +(p.par - p.qty).toFixed(2));
+const prepUrgent = p => prepState(p).rank <= 1 || p.qty <= 0 || p.qty < p.par * 0.5;
+const toDateVal = t => { const d = new Date(t); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const tcCalc = m => {
+  const r = { out: 0, k: 0, p: 0, f: 0, c: 0, cost: 0 };
+  ((m.tc && m.tc.ings) || []).forEach(i => {
+    const pc = i.unit === 'шт', x = i.qty / (pc ? 1 : 100);
+    r.k += x * (i.kcal || 0); r.p += x * (i.p || 0); r.f += x * (i.f || 0); r.c += x * (i.c || 0);
+    r.out += pc ? i.qty * (i.w || 0) : i.qty;
+    r.cost += pc ? i.qty * (i.price || 0) : i.qty / 1000 * (i.price || 0);
+  });
+  return r;
+};
+const hasTc = m => m.tc && m.tc.ings.length > 0;
+const menuCost = m => hasTc(m) ? tcCalc(m).cost : m.cost;
+const stockAmt = (g, st) => {
+  const a = g.unit, b = String(st.unit).trim().toLowerCase();
+  if (a === 'шт' && b === 'шт') return g.qty;
+  if (a === 'г' && b === 'кг') return g.qty / 1000;
+  if (a === 'мл' && b === 'л') return g.qty / 1000;
+  if (a === 'г' && b === 'г') return g.qty;
+  return 0;
+};
+function stockMove(o, dir) {
+  if (dir < 0) {
+    const log = [];
+    o.items.forEach(it => { const m = S.menu.find(x => x.id === it.id); if (!m || !m.tc) return;
+      m.tc.ings.forEach(g => { const st = S.stock.find(x => x.id === g.stockId); const a = st ? stockAmt(g, st) : 0; if (!a) return;
+        const take = Math.min(st.qty, +(a * it.qty).toFixed(3)); st.qty = +(st.qty - take).toFixed(3); log.push([st.id, take]); }); });
+    o.deducted = log;
+  } else { (o.deducted || []).forEach(([id, a]) => { const st = S.stock.find(x => x.id === id); if (st) st.qty = +(st.qty + a).toFixed(3); }); o.deducted = []; }
+}
+const lowStock = () => S.stock.filter(s => s.qty < s.min);
+const shopTarget = s => s.min * 2;
+const shopQty = s => { const n = shopTarget(s) - s.qty; return s.unit === 'шт' ? Math.ceil(n) : Math.ceil(n * 2) / 2; };
+const shopItems = () => lowStock().map(s => ({ s, buy: shopQty(s) })).filter(x => x.buy > 0);
+
+let toastTimer;
+function toast(msg, undo) {
+  $('#toast-t').textContent = msg;
+  const u = $('#toast-u');
+  u.hidden = !undo;
+  u.onclick = () => { undo(); hideToast(); };
+  $('#toast').classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideToast, 5000);
+}
+function hideToast() { $('#toast').classList.remove('on'); }
+const buzz = () => { try { navigator.vibrate && navigator.vibrate(15); } catch (e) {} };
+
+/* ---------- render ---------- */
+function renderAll() { renderTop(); renderTiles(); renderQueue(); renderSales(); renderMenu(); renderStock(); renderPrep(); renderTc(); renderNav(); }
+
+function renderTop() {
+  const s = soldIn('day');
+  $('#top-label').textContent = 'Сегодня · ' + s.length + ' прод.';
+  $('#top-sum').textContent = money(s.reduce((t, o) => t + orderSum(o), 0));
+}
+
+function renderNav() {
+  const n = S.orders.filter(o => o.status !== 'sold').length;
+  $('#nav-dot').hidden = !n; $('#nav-dot').textContent = n;
+  $('#seg-n').textContent = n;
+  const l = lowStock().length;
+  $('#stock-dot').hidden = !l; $('#stock-dot').textContent = l;
+  const pu = S.preps.filter(prepUrgent).length;
+  $('#prep-dot').hidden = !pu; $('#prep-dot').textContent = pu;
+  $$('.nav button').forEach(b => b.classList.toggle('on', b.dataset.view === view));
+  $$('.view').forEach(v => v.classList.toggle('on', v.id === 'v-' + view));
+  $$('#seg .chip').forEach(c => c.classList.toggle('on', c.dataset.sub === sub));
+  $('#sub-new').classList.toggle('on', sub === 'new');
+  $('#sub-queue').classList.toggle('on', sub === 'queue');
+  const items = cartItems();
+  const bar = $('#cartbar');
+  bar.hidden = !(view === 'orders' && items.length && (sub === 'new' || matchMedia('(min-width:860px)').matches));
+  const cnt = items.reduce((t, i) => t + i.qty, 0);
+  $('#cb-l').textContent = '🛒 ' + cnt + ' поз. · ' + money(items.reduce((t, i) => t + i.price * i.qty, 0));
+}
+
+function renderTiles() {
+  $('#tiles').innerHTML = S.menu.length ? S.menu.map(m => {
+    const q = cart[m.id] || 0;
+    return `<div class="tile-wrap">
+      <button class="tile ${q ? 'has' : ''} ${m.on ? '' : 'off'}" data-act="add" data-id="${m.id}" ${m.on ? '' : 'disabled'} aria-label="Добавить ${esc(m.name)}">
+        <div class="em">${esc(m.em)}</div><div class="nm">${esc(m.name)}</div>
+        ${m.on ? `<div class="pr">${money(m.price)}</div>` : '<div class="stop">Нет в наличии</div>'}
+      </button>
+      ${q ? `<span class="qty-badge">${q}</span><button class="minus" data-act="sub" data-id="${m.id}" aria-label="Убрать ${esc(m.name)}">−</button>` : ''}
+    </div>`;
+  }).join('') : '<div class="empty">Меню пустое. Добавьте блюда во вкладке «Меню».</div>';
+}
+
+function renderQueue() {
+  const act = S.orders.filter(o => o.status !== 'sold');
+  const cnt = k => act.filter(o => o.status === k).length;
+  $('#filters').innerHTML = [['all', 'Все', act.length], ['new', 'Новые', cnt('new')], ['cook', 'Готовятся', cnt('cook')], ['ready', 'Готовы', cnt('ready')]]
+    .map(([k, l, n]) => `<button class="chip ${filter === k ? 'on' : ''}" data-filter="${k}">${l}<span class="n">${n}</span></button>`).join('');
+  const list = act.filter(o => filter === 'all' || o.status === filter).sort((a, b) => a.created - b.created);
+  $('#queue').innerHTML = list.length ? list.map(o => {
+    const st = STATUS[o.status], m = minsAgo(o.created), late = m >= LATE_MIN && o.status !== 'ready';
+    return `<div class="order ${o.status} ${late ? 'late' : ''}">
+      <div class="o-head"><span>№${o.num}${o.client ? ' · ' + esc(o.client) : ''}</span><span class="badge ${st.cls}">${st.label}</span></div>
+      <div class="o-sub">${o.type === 'go' ? '🥡 С собой' : '🍽 На месте'} · <span class="timer ${late ? 'late' : ''}">${m} мин назад${late ? ' ⚠' : ''}</span></div>
+      <div class="o-items">${o.items.map(i => `<div><span>${esc(i.name)} × ${i.qty}</span><span>${money(i.price * i.qty)}</span></div>`).join('')}</div>
+      ${o.note ? `<div class="o-note">💬 ${esc(o.note)}</div>` : ''}
+      <div class="o-foot"><span class="o-total">${money(orderSum(o))}</span></div>
+      <div class="o-actions"><button class="btn" data-act="next" data-n="${o.num}">${st.act}</button><button class="btn ghost" style="flex:0 0 auto" data-act="cancel" data-n="${o.num}" aria-label="Отменить заказ">✕</button></div>
+    </div>`;
+  }).join('') : `<div class="empty"><div class="big">🎉</div>${act.length ? 'В этом статусе заказов нет' : 'Очередь пуста. Новые заказы появятся здесь.'}</div>`;
+}
+
+function renderSales() {
+  $$('#period .chip').forEach(c => c.classList.toggle('on', c.dataset.p === period));
+  const s = soldIn(period);
+  const rev = s.reduce((t, o) => t + orderSum(o), 0), cost = s.reduce((t, o) => t + orderCost(o), 0);
+  $('#stats').innerHTML = [['Продано заказов', s.length], ['Выручка', money(rev)], ['Средний чек', money(s.length ? rev / s.length : 0)], ['Прибыль (оценка)', money(rev - cost)]]
+    .map(([l, v]) => `<div class="stat"><div class="l">${l}</div><div class="v">${v}</div></div>`).join('');
+  const agg = {};
+  s.forEach(o => o.items.forEach(i => { (agg[i.name] = agg[i.name] || { q: 0, r: 0 }); agg[i.name].q += i.qty; agg[i.name].r += i.qty * i.price; }));
+  const top = Object.entries(agg).sort((a, b) => b[1].q - a[1].q), max = top.length ? top[0][1].q : 1;
+  $('#top').innerHTML = top.length ? top.map(([n, v]) => `<div class="bar-row"><div class="top"><span>${esc(n)}</span><b>${v.q} шт · ${money(v.r)}</b></div><div class="bar"><i style="width:${v.q / max * 100}%"></i></div></div>`).join('') : '<div class="empty">Пока нет данных</div>';
+  const h = s.slice().sort((a, b) => b.sold - a.sold);
+  $('#hist').innerHTML = h.length ? h.slice(0, 50).map(o => `<div class="hist"><div><b>№${o.num}${o.client ? ' · ' + esc(o.client) : ''}</b><div class="muted">${o.items.map(i => esc(i.name) + ' ×' + i.qty).join(', ')}</div><div class="muted">${new Date(o.sold).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</div></div><b>${money(orderSum(o))}</b></div>`).join('')
+    : '<div class="empty"><div class="big">💵</div>Здесь появятся проданные заказы.<br>Создайте заказ и доведите его до статуса «Продан».</div>';
+}
+
+function renderMenu() {
+  $('#menu-list').innerHTML = S.menu.map(m => `<div class="row">
+    <div><b>${esc(m.em)} ${esc(m.name)}</b>
+      <div class="grid2"><div><small>Цена, ₫</small><input type="number" inputmode="numeric" value="${m.price}" data-edit="price" data-id="${m.id}" aria-label="Цена ${esc(m.name)}"></div>
+      <div><small>Себестоимость, ₫</small>${hasTc(m) ? `<div style="min-height:44px;display:flex;align-items:center;font-weight:700">${money(menuCost(m))}<span class="muted">&nbsp;· из тех. карты</span></div>` : `<input type="number" inputmode="numeric" value="${m.cost}" data-edit="cost" data-id="${m.id}" aria-label="Себестоимость ${esc(m.name)}">`}</div></div></div>
+    <div style="text-align:center"><label class="switch"><input type="checkbox" ${m.on ? 'checked' : ''} data-edit="on" data-id="${m.id}"> Есть</label><br><button class="btn ghost sm danger" data-act="del-dish" data-id="${m.id}" aria-label="Удалить ${esc(m.name)}">Удалить</button></div>
+  </div>`).join('') || '<div class="empty">Нет блюд</div>';
+}
+
+function renderStock() {
+  const low = lowStock();
+  $('#stock-alert').innerHTML = low.length ? `<div class="card" style="background:var(--warn-bg);color:var(--warn-fg);border-color:var(--warn-fg)"><b>⚠ Пора закупить:</b> ${low.map(s => esc(s.name)).join(', ')}</div>` : '';
+  const shop = shopItems();
+  $('#shop-card').hidden = !shop.length;
+  $('#shop-list').innerHTML = shop.map(({ s, buy }) => `<div class="row"><div><b>${esc(s.name)}</b><div class="muted">Есть ${+s.qty.toFixed(2)}, минимум ${s.min} ${esc(s.unit)}</div></div><div style="display:flex;align-items:center;gap:8px"><b>Купить ${buy} ${esc(s.unit)}</b><button class="btn sm" data-act="shop-bought" data-id="${s.id}">Купил</button></div></div>`).join('');
+  $('#stock-list').innerHTML = S.stock.map(s => {
+    const bad = s.qty < s.min;
+    return `<div class="row"><div><b>${esc(s.name)}</b> <span class="badge ${bad ? 'b-bad' : 'b-ok'}">${bad ? 'Мало' : 'В норме'}</span><div class="muted">Минимум: ${s.min} ${esc(s.unit)}</div></div>
+      <div class="stepper"><button class="icon-btn" data-act="stock" data-id="${s.id}" data-d="-1" aria-label="Уменьшить ${esc(s.name)}">−</button><b>${+s.qty.toFixed(2)} ${esc(s.unit)}</b><button class="icon-btn" data-act="stock" data-id="${s.id}" data-d="1" aria-label="Увеличить ${esc(s.name)}">+</button></div></div>`;
+  }).join('') || '<div class="empty">Склад пуст</div>';
+}
+
+function renderPrep() {
+  const need = S.preps.filter(p => prepNeed(p) > 0).length;
+  const exp = S.preps.filter(p => prepState(p).rank <= 3).length;
+  $('#prep-sum').innerHTML = `<div class="stat"><div class="l">Нужно заготовить</div><div class="v">${need}</div></div><div class="stat"><div class="l">Срок на исходе</div><div class="v">${exp}</div></div>`;
+  const list = S.preps.slice().sort((a, b) => (prepUrgent(b) - prepUrgent(a)) || (prepState(a).rank - prepState(b).rank) || (prepNeed(b) / (b.par || 1) - prepNeed(a) / (a.par || 1)));
+  $('#prep-list').innerHTML = list.map(p => {
+    const st = prepState(p), nd = prepNeed(p), pct = p.par ? Math.min(100, p.qty / p.par * 100) : 100;
+    return `<div class="pcard">
+      <div class="hd"><b>${esc(p.name)}</b><span class="badge b-${st.k === 'ok' ? 'ok' : st.k === 'warn' ? 'cook' : 'bad'}">${st.t}</span></div>
+      <div class="need">Есть <b style="color:var(--text)">${+p.qty.toFixed(2)} ${esc(p.unit)}</b> из ${p.par} ${esc(p.unit)}${nd > 0 ? ` · <b>заготовить ещё ${nd} ${esc(p.unit)}</b>` : ' · хватает'}</div>
+      <div class="meter"><i class="${pct < 50 ? 'low' : ''}" style="width:${pct}%"></i></div>
+      <div class="pact">
+        <button class="btn sm" data-act="prep-make" data-id="${p.id}">+ Заготовил ${p.batch} ${esc(p.unit)}</button>
+        <button class="btn ghost sm" data-act="prep-use" data-id="${p.id}">− Израсходовано</button>
+        <button class="btn ghost sm" data-act="prep-waste" data-id="${p.id}">Списать</button>
+        <label class="muted" for="exp-${p.id}">Годен до</label><input type="date" id="exp-${p.id}" value="${p.exp ? toDateVal(p.exp) : ''}" data-prepdate="${p.id}">
+        <button class="btn ghost sm danger" data-act="prep-del" data-id="${p.id}" aria-label="Удалить ${esc(p.name)}">Удалить</button>
+      </div></div>`;
+  }).join('') || '<div class="empty">Заготовок нет. Добавьте первую ниже.</div>';
+}
+
+let msub = 'list', tcId = null;
+const fx = (n, d = 0) => (+n).toLocaleString('ru-RU', { maximumFractionDigits: d });
+function renderTc() {
+  $$('#mseg .chip').forEach(c => c.classList.toggle('on', c.dataset.msub === msub));
+  $('#m-list').hidden = msub !== 'list'; $('#m-tc').hidden = msub !== 'tc';
+  $('#tc-list').innerHTML = S.menu.map(m => {
+    if (!hasTc(m)) return `<div class="tc-card"><b>${esc(m.em)} ${esc(m.name)}</b><div class="tc-line">Состав не заполнен</div><button class="btn sm" data-act="tc-open" data-id="${m.id}">Заполнить карту</button></div>`;
+    const c = tcCalc(m), food = m.price ? c.cost / m.price * 100 : 0;
+    return `<div class="tc-card"><b>${esc(m.em)} ${esc(m.name)}</b>
+      <div class="tc-line">Выход <b>${fx(c.out)} г</b> · <b>${fx(c.k)} ккал</b> · Б <b>${fx(c.p, 1)}</b> Ж <b>${fx(c.f, 1)}</b> У <b>${fx(c.c, 1)}</b></div>
+      <div class="tc-line">Себестоимость <b>${money(c.cost)}</b> (${fx(food, 1)}% от цены) · наценка <b>${money(m.price - c.cost)}</b>${m.tc.time ? ` · ⏱ ${m.tc.time} мин` : ''}</div>
+      <button class="btn ghost sm" data-act="tc-open" data-id="${m.id}">Открыть карту</button></div>`;
+  }).join('') || '<div class="empty">Нет блюд</div>';
+}
+
+function tcTotalsHtml(m) {
+  const c = tcCalc(m), per100 = c.out ? 100 / c.out : 0, food = m.price ? c.cost / m.price * 100 : 0;
+  return `<div class="tc-tot"><div><b>${fx(c.k)}</b><span>ккал</span></div><div><b>${fx(c.p, 1)}</b><span>белки, г</span></div><div><b>${fx(c.f, 1)}</b><span>жиры, г</span></div><div><b>${fx(c.c, 1)}</b><span>углеводы, г</span></div></div>
+    <div class="muted">Выход порции: <b style="color:var(--text)">${fx(c.out)} г</b> · на 100 г: ${fx(c.k * per100)} ккал, Б ${fx(c.p * per100, 1)} Ж ${fx(c.f * per100, 1)} У ${fx(c.c * per100, 1)}</div>
+    <div class="muted" style="margin-top:4px">Себестоимость: <b style="color:var(--text)">${money(c.cost)}</b> · цена ${money(m.price)} · фудкост ${fx(food, 1)}% · наценка ${money(m.price - c.cost)}</div>`;
+}
+
+function openTc(id) {
+  const m = S.menu.find(x => x.id === id); if (!m) return;
+  tcId = id; const t = m.tc;
+  const opts = sel => `<option value="">— не списывать —</option>` + S.stock.map(st => `<option value="${st.id}" ${st.id === sel ? 'selected' : ''}>${esc(st.name)} (${esc(st.unit)})</option>`).join('');
+  $('#sheet').innerHTML = `
+    <div class="sheet-head"><h2 style="margin:0">${esc(m.em)} ${esc(m.name)}</h2><button class="icon-btn" data-act="close-sheet" aria-label="Закрыть">✕</button></div>
+    <div id="tc-totals">${tcTotalsHtml(m)}</div>
+    <h2 style="margin-top:14px">Состав</h2>
+    ${t.ings.map((g, i) => `<div class="ing">
+      <div class="ing-top"><input data-tc="name" data-i="${i}" value="${esc(g.name)}" placeholder="Ингредиент" aria-label="Ингредиент"><button class="icon-btn" data-act="tc-del-ing" data-i="${i}" aria-label="Удалить ингредиент">✕</button></div>
+      <div class="ing-grid">
+        <label><small>Количество</small><input type="number" inputmode="decimal" data-tc="qty" data-i="${i}" value="${g.qty}"></label>
+        <label><small>Единица</small><select data-tc="unit" data-i="${i}">${['г', 'мл', 'шт'].map(u => `<option ${u === g.unit ? 'selected' : ''}>${u}</option>`).join('')}</select></label>
+        ${g.unit === 'шт' ? `<label><small>Вес 1 шт, г</small><input type="number" inputmode="decimal" data-tc="w" data-i="${i}" value="${g.w}"></label>` : ''}
+      </div>
+      <div class="muted" style="margin-top:8px">КБЖУ на ${g.unit === 'шт' ? '1 шт' : '100 ' + g.unit}</div>
+      <div class="ing-grid" style="grid-template-columns:repeat(4,1fr)">
+        <label><small>ккал</small><input type="number" inputmode="decimal" data-tc="kcal" data-i="${i}" value="${g.kcal}"></label>
+        <label><small>Б</small><input type="number" inputmode="decimal" data-tc="p" data-i="${i}" value="${g.p}"></label>
+        <label><small>Ж</small><input type="number" inputmode="decimal" data-tc="f" data-i="${i}" value="${g.f}"></label>
+        <label><small>У</small><input type="number" inputmode="decimal" data-tc="c" data-i="${i}" value="${g.c}"></label>
+      </div>
+      <div class="ing-grid">
+        <label><small>Цена за ${g.unit === 'шт' ? '1 шт' : g.unit === 'мл' ? 'литр' : 'кг'}, ₫</small><input type="number" inputmode="numeric" data-tc="price" data-i="${i}" value="${g.price}"></label>
+        <label><small>Списывать со склада</small><select data-tc="stockId" data-i="${i}">${opts(g.stockId)}</select></label>
+      </div></div>`).join('') || '<div class="empty">Состав пуст. Добавьте первый ингредиент.</div>'}
+    <button class="btn ghost block" data-act="tc-add-ing">+ Ингредиент</button>
+    <div class="tcmeta">
+      <label class="f" for="tc-time">Время приготовления, мин</label><input id="tc-time" type="number" inputmode="numeric" data-tcmeta="time" value="${t.time || ''}">
+      <label class="f" for="tc-steps">Технология приготовления</label><textarea id="tc-steps" data-tcmeta="steps">${esc(t.steps || '')}</textarea>
+    </div>
+    <button class="btn block" style="margin-top:14px" data-act="close-sheet">Готово</button>`;
+  hideToast(); $('#sheet-bg').classList.add('on');
+}
+
+/* ---------- cart sheet ---------- */
+function openCart() {
+  const items = cartItems();
+  if (!items.length) return;
+  const total = items.reduce((t, i) => t + i.price * i.qty, 0);
+  $('#sheet').innerHTML = `
+    <div class="sheet-head"><h2 style="margin:0">Оформление заказа</h2><button class="icon-btn" data-act="close-sheet" aria-label="Закрыть">✕</button></div>
+    ${items.map(i => `<div class="cart-row"><span class="nm">${esc(i.name)}<div class="muted">${money(i.price)}</div></span>
+      <div class="stepper"><button class="icon-btn" data-act="sub" data-id="${i.id}" data-sheet="1">−</button><b>${i.qty}</b><button class="icon-btn" data-act="add" data-id="${i.id}" data-sheet="1">+</button></div></div>`).join('')}
+    <label class="f" for="c-client">Имя клиента или номер стола</label><input id="c-client" value="${esc(meta.client)}" placeholder="например, Анна или Стол 4" autocomplete="off">
+    <label class="f">Тип заказа</label>
+    <div class="chips" style="margin:0"><button class="chip ${meta.type === 'here' ? 'on' : ''}" data-type="here">🍽 На месте</button><button class="chip ${meta.type === 'go' ? 'on' : ''}" data-type="go">🥡 С собой</button></div>
+    <label class="f" for="c-note">Комментарий (без лука, соус отдельно…)</label><input id="c-note" value="${esc(meta.note)}" autocomplete="off">
+    <div class="total-line"><span>Итого</span><span>${money(total)}</span></div>
+    <button class="btn block" data-act="create">Создать заказ</button>
+    <button class="btn ghost block" style="margin-top:8px" data-act="clear-cart">Очистить корзину</button>`;
+  hideToast();
+  $('#sheet-bg').classList.add('on');
+}
+function closeSheet() { $('#sheet-bg').classList.remove('on'); if (tcId !== null) { tcId = null; save(); renderAll(); } }
+function syncMeta() { const c = $('#c-client'), n = $('#c-note'); if (c) meta.client = c.value.trim(); if (n) meta.note = n.value.trim(); }
+
+function addToCart(id, d) {
+  const m = S.menu.find(x => x.id === id); if (!m || (d > 0 && !m.on)) return;
+  cart[id] = Math.max(0, (cart[id] || 0) + d);
+  if (!cart[id]) delete cart[id];
+  buzz(); renderTiles(); renderNav();
+}
+
+function createOrder() {
+  syncMeta();
+  const items = cartItems(); if (!items.length) return;
+  const o = { num: S.seq.order++, client: meta.client, type: meta.type, note: meta.note, items, status: 'new', created: Date.now() };
+  S.orders.push(o); cart = {}; meta = { client: '', type: meta.type, note: '' };
+  save(); closeSheet(); sub = 'queue'; filter = 'all'; renderAll();
+  toast('Заказ №' + o.num + ' создан', () => { S.orders = S.orders.filter(x => x.num !== o.num); save(); renderAll(); });
+}
+
+function advance(num) {
+  const o = S.orders.find(x => x.num === num); if (!o) return;
+  const prev = o.status; o.status = FLOW[FLOW.indexOf(prev) + 1];
+  if (o.status === 'sold') { o.sold = Date.now(); stockMove(o, -1); }
+  save(); renderAll(); buzz();
+  toast(o.status === 'sold' ? 'Заказ №' + num + ' продан · ' + money(orderSum(o)) : 'Заказ №' + num + ': ' + STATUS[o.status].label, () => { if (o.status === 'sold') stockMove(o, 1); o.status = prev; delete o.sold; save(); renderAll(); });
+}
+
+function cancelOrder(num) {
+  const o = S.orders.find(x => x.num === num); if (!o) return;
+  S.orders = S.orders.filter(x => x.num !== num); save(); renderAll();
+  toast('Заказ №' + num + ' отменён', () => { S.orders.push(o); save(); renderAll(); });
+}
+
+function demo() {
+  const day = 864e5, now = Date.now(), names = ['Анна', 'Минь', 'Олег', '', 'Стол 2', '', 'Лена', ''];
+  for (let i = 0; i < 14; i++) {
+    const items = S.menu.filter(() => Math.random() < .55).map(m => ({ id: m.id, name: m.em + ' ' + m.name, price: m.price, cost: m.cost, qty: 1 + Math.floor(Math.random() * 2) }));
+    if (!items.length) items.push({ id: S.menu[0].id, name: S.menu[0].em + ' ' + S.menu[0].name, price: S.menu[0].price, cost: S.menu[0].cost, qty: 1 });
+    const t = now - Math.floor(i / 7) * day - (i % 7) * 3600e3 * 1.3;
+    S.orders.push({ num: S.seq.order++, client: names[i % names.length], type: i % 3 ? 'here' : 'go', note: '', items, status: 'sold', created: t - 600e3, sold: t });
+  }
+  save(); renderAll(); toast('Демо-заказы добавлены');
+}
+
+function shopCopy() {
+  const text = 'Список покупок:\n' + shopItems().map(({ s, buy }) => '• ' + s.name + ': ' + buy + ' ' + s.unit).join('\n');
+  const ok = () => toast('Список скопирован');
+  const fallback = () => { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); ok(); } catch (e) { toast('Не удалось скопировать'); } ta.remove(); };
+  try { navigator.clipboard.writeText(text).then(ok, fallback); } catch (e) { fallback(); }
+}
+function csv() {
+  const rows = [['№', 'Дата', 'Клиент', 'Состав', 'Сумма']].concat(soldIn(period).map(o => [o.num, new Date(o.sold).toLocaleString('ru-RU'), o.client, o.items.map(i => i.name + ' x' + i.qty).join('; '), orderSum(o)]));
+  const text = '﻿' + rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(';')).join('\n');
+  const ok = () => toast('Таблица скопирована. Вставьте её в Excel или Google Sheets');
+  const fallback = () => { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); ok(); } catch (e) { toast('Не удалось скопировать'); } ta.remove(); };
+  try { navigator.clipboard.writeText(text).then(ok, fallback); } catch (e) { fallback(); }
+}
+
+/* ---------- events ---------- */
+document.addEventListener('click', e => {
+  const t = e.target.closest('button'); if (!t) return;
+  const d = t.dataset, id = +d.id;
+  if (d.view) { view = d.view; renderNav(); scrollTo(0, 0); return; }
+  if (d.sub) { sub = d.sub; renderNav(); return; }
+  if (d.msub) { msub = d.msub; renderTc(); return; }
+  if (d.filter) { filter = d.filter; renderQueue(); return; }
+  if (d.p) { period = d.p; renderSales(); return; }
+  if (d.type) { syncMeta(); meta.type = d.type; openCart(); return; }
+  switch (d.act) {
+    case 'add': addToCart(id, 1); if (d.sheet) { syncMeta(); openCart(); } break;
+    case 'sub': addToCart(id, -1); if (d.sheet) { syncMeta(); cartItems().length ? openCart() : closeSheet(); } break;
+    case 'open-cart': openCart(); break;
+    case 'close-sheet': syncMeta(); closeSheet(); break;
+    case 'clear-cart': cart = {}; meta.note = ''; closeSheet(); renderTiles(); renderNav(); break;
+    case 'create': createOrder(); break;
+    case 'next': advance(+d.n); break;
+    case 'cancel': cancelOrder(+d.n); break;
+    case 'prep-make': { const p = S.preps.find(x => x.id === id), old = { qty: p.qty, exp: p.exp };
+      const fresh = eod(Date.now() + (p.shelf || 1) * DAY);
+      p.exp = p.qty > 0 && p.exp && p.exp < fresh ? p.exp : fresh; p.qty = +(p.qty + p.batch).toFixed(2);
+      save(); renderPrep(); renderNav(); toast('Партия «' + p.name + '» заготовлена', () => { Object.assign(p, old); save(); renderPrep(); renderNav(); }); break; }
+    case 'prep-use': { const p = S.preps.find(x => x.id === id), old = p.qty, step = p.unit === 'шт' ? 5 : 0.5;
+      p.qty = Math.max(0, +(p.qty - step).toFixed(2)); save(); renderPrep(); renderNav(); toast('−' + step + ' ' + p.unit + ' · ' + p.name, () => { p.qty = old; save(); renderPrep(); renderNav(); }); break; }
+    case 'prep-waste': { const p = S.preps.find(x => x.id === id), old = p.qty; p.qty = 0; save(); renderPrep(); renderNav(); toast('«' + p.name + '» списано', () => { p.qty = old; save(); renderPrep(); renderNav(); }); break; }
+    case 'prep-del': { const p = S.preps.find(x => x.id === id); S.preps = S.preps.filter(x => x.id !== id); save(); renderPrep(); renderNav(); toast('«' + p.name + '» удалено', () => { S.preps.push(p); save(); renderPrep(); renderNav(); }); break; }
+    case 'add-prep': {
+      const name = $('#pp-name').value.trim(), par = +$('#pp-par').value;
+      if (!name || !(par > 0)) { toast('Укажите название и сколько нужно на смену'); return; }
+      const shelf = +$('#pp-shelf').value || 1, qty = +$('#pp-qty').value || 0;
+      S.preps.push({ id: S.seq.prep++, name, qty, unit: $('#pp-unit').value.trim() || 'шт', par, batch: +$('#pp-batch').value || par, shelf, exp: qty > 0 ? eod(Date.now() + shelf * DAY) : null });
+      ['#pp-name', '#pp-qty', '#pp-unit', '#pp-par', '#pp-batch', '#pp-shelf'].forEach(q => $(q).value = ''); save(); renderPrep(); renderNav(); toast('Заготовка добавлена'); break; }
+    case 'tc-open': openTc(id); break;
+    case 'tc-add-ing': { const m = S.menu.find(x => x.id === tcId); m.tc.ings.push(I('', 0, 'г', 0, 0, 0, 0, 0)); openTc(tcId); $$('#sheet [data-tc=name]').pop().focus(); break; }
+    case 'tc-del-ing': { const m = S.menu.find(x => x.id === tcId); m.tc.ings.splice(+d.i, 1); save(); openTc(tcId); break; }
+    case 'csv': csv(); break;
+    case 'shop-bought': { const s = S.stock.find(x => x.id === id), old = s.qty; s.qty = +(old + shopQty(s)).toFixed(3); save(); renderStock(); renderNav(); toast('Куплено: ' + s.name, () => { s.qty = old; save(); renderStock(); renderNav(); }); break; }
+    case 'shop-copy': shopCopy(); break;
+    case 'demo': demo(); break;
+    case 'stock': { const s = S.stock.find(x => x.id === id); const step = s.unit === 'шт' ? 10 : 0.5; s.qty = Math.max(0, +(s.qty + step * +d.d).toFixed(2)); save(); renderStock(); renderNav(); break; }
+    case 'del-dish': { const m = S.menu.find(x => x.id === id), q = cart[id]; S.menu = S.menu.filter(x => x.id !== id); delete cart[id]; save(); renderAll(); toast('Блюдо «' + m.name + '» удалено', () => { S.menu.push(m); S.menu.sort((a, b) => a.id - b.id); if (q) cart[id] = q; save(); renderAll(); }); break; }
+    case 'add-dish': {
+      const name = $('#nm-name').value.trim(), price = +$('#nm-price').value;
+      if (!name || !(price > 0)) { toast('Укажите название и цену'); return; }
+      S.menu.push({ id: S.seq.menu++, em: $('#nm-em').value.trim() || '🍽', name, price, cost: Math.round(price * .04), on: true, tc: { time: 0, steps: '', ings: [] } });
+      $('#nm-name').value = $('#nm-price').value = $('#nm-em').value = ''; save(); renderAll(); toast('Блюдо добавлено'); break;
+    }
+    case 'add-stock': {
+      const name = $('#st-name').value.trim(), qty = +$('#st-qty').value;
+      if (!name || isNaN(qty)) { toast('Укажите название и остаток'); return; }
+      S.stock.push({ id: S.seq.stock++, name, qty, unit: $('#st-unit').value.trim() || 'шт', min: +$('#st-min').value || 0 });
+      ['#st-name', '#st-qty', '#st-unit', '#st-min'].forEach(s => $(s).value = ''); save(); renderStock(); renderNav(); toast('Позиция добавлена'); break;
+    }
+    case 'reset': if (t.dataset.armed) { S = SEED(); cart = {}; save(); renderAll(); toast('Данные сброшены'); t.dataset.armed = ''; t.innerHTML = '<span class="danger">Сбросить все данные</span>'; } else { t.dataset.armed = '1'; t.innerHTML = '<span class="danger">Нажмите ещё раз: удалятся все заказы, меню и склад</span>'; setTimeout(() => { t.dataset.armed = ''; t.innerHTML = '<span class="danger">Сбросить все данные</span>'; }, 4000); } break;
+  }
+});
+document.addEventListener('change', e => {
+  const tg = e.target;
+  if (tcId !== null && (tg.dataset.tc || tg.dataset.tcmeta)) {
+    const m = S.menu.find(x => x.id === tcId);
+    if (tg.dataset.tcmeta) { m.tc[tg.dataset.tcmeta] = tg.dataset.tcmeta === 'time' ? Math.max(0, +tg.value || 0) : tg.value; save(); return; }
+    const g = m.tc.ings[+tg.dataset.i], f = tg.dataset.tc;
+    if (f === 'name') g.name = tg.value.trim();
+    else if (f === 'unit') { g.unit = tg.value; save(); openTc(tcId); return; }
+    else if (f === 'stockId') g.stockId = tg.value ? +tg.value : null;
+    else g[f] = Math.max(0, +tg.value || 0);
+    save(); $('#tc-totals').innerHTML = tcTotalsHtml(m); return;
+  }
+  if (e.target.dataset.prepdate) { const p = S.preps.find(x => x.id === +e.target.dataset.prepdate); p.exp = e.target.value ? eod(new Date(e.target.value + 'T12:00:00')) : null; save(); renderPrep(); renderNav(); return; }
+  const t = e.target, f = t.dataset.edit; if (!f) return;
+  const m = S.menu.find(x => x.id === +t.dataset.id); if (!m) return;
+  if (f === 'on') m.on = t.checked; else m[f] = Math.max(0, +t.value || 0);
+  save(); renderTiles(); renderNav();
+});
+$('#sheet-bg').addEventListener('click', e => { if (e.target.id === 'sheet-bg') { syncMeta(); closeSheet(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { syncMeta(); closeSheet(); } });
+matchMedia('(min-width:860px)').addEventListener('change', renderNav);
+setInterval(() => { if (view === 'orders') renderQueue(); }, 30000);
+
+renderAll();
+</script>
+</body>
+</html>
