@@ -261,6 +261,17 @@ textarea { min-height: 80px; resize: vertical; }
         <label class="f" for="nm-price">Цена, ₫</label><input id="nm-price" type="number" inputmode="numeric" placeholder="165000">
         <button class="btn block" style="margin-top:12px" data-act="add-dish">Добавить в меню</button>
       </div>
+      <div class="card"><h2>💾 Резервная копия</h2>
+        <div class="muted" id="bk-info" style="margin-bottom:8px"></div>
+        <div style="display:grid;gap:8px">
+          <button class="btn block" data-act="bk-save">Скачать копию (файл)</button>
+          <button class="btn ghost block" data-act="bk-copy">Скопировать копию (текст)</button>
+          <button class="btn ghost block" data-act="bk-file">Восстановить из файла</button>
+          <input id="bk-file" type="file" accept=".json,application/json" hidden>
+          <textarea id="bk-text" placeholder="Или вставьте сюда скопированную копию" aria-label="Текст копии"></textarea>
+          <button class="btn ghost block" data-act="bk-paste">Восстановить из текста</button>
+        </div>
+      </div>
       <button class="btn ghost block" data-act="reset"><span class="danger">Сбросить все данные</span></button>
       </div>
     </section>
@@ -364,6 +375,11 @@ try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
 if (!S || !S.menu) S = SEED();
 S.menu.forEach(m => { if (!m.tc) m.tc = TC_SEED[m.id] && SEED().menu.find(x => x.id === m.id && x.name === m.name) ? JSON.parse(JSON.stringify(TC_SEED[m.id])) : { time: 0, steps: '', ings: [] }; });
 if (!S.preps) { S.preps = PREP_SEED(); S.seq.prep = 5; }
+const normalize = d => {
+  d.menu.forEach(m => { if (!m.tc) m.tc = { time: 0, steps: '', ings: [] }; });
+  if (!d.preps) d.preps = []; d.seq = Object.assign({ menu: 1, stock: 1, order: 1, prep: 1 }, d.seq);
+  return d;
+};
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 
 let cart = {};                       // dishId -> qty
@@ -447,7 +463,7 @@ function hideToast() { $('#toast').classList.remove('on'); }
 const buzz = () => { try { navigator.vibrate && navigator.vibrate(15); } catch (e) {} };
 
 /* ---------- render ---------- */
-function renderAll() { renderTop(); renderTiles(); renderQueue(); renderSales(); renderMenu(); renderStock(); renderPrep(); renderTc(); renderNav(); }
+function renderAll() { renderBk(); renderTop(); renderTiles(); renderQueue(); renderSales(); renderMenu(); renderStock(); renderPrep(); renderTc(); renderNav(); }
 
 function renderTop() {
   const s = soldIn('day');
@@ -691,6 +707,37 @@ function shopCopy() {
   const fallback = () => { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); ok(); } catch (e) { toast('Не удалось скопировать'); } ta.remove(); };
   try { navigator.clipboard.writeText(text).then(ok, fallback); } catch (e) { fallback(); }
 }
+const bkText = () => JSON.stringify({ app: 'burger-app', v: 2, saved: Date.now(), data: S });
+const bkMark = () => { try { localStorage.setItem(KEY + '-bk', String(Date.now())); } catch (e) {} renderBk(); };
+function renderBk() {
+  let t = 0; try { t = +localStorage.getItem(KEY + '-bk'); } catch (e) {}
+  $('#bk-info').textContent = t ? 'Последняя копия: ' + new Date(t).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Копий ещё не делали. Данные хранятся только в этом браузере.';
+}
+function bkSave() {
+  try {
+    const a = document.createElement('a'), d = new Date();
+    a.href = URL.createObjectURL(new Blob([bkText()], { type: 'application/json' }));
+    a.download = 'burger-backup-' + d.toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a); a.click(); a.remove(); bkMark(); toast('Копия сохранена в загрузки');
+  } catch (e) { bkCopy(); }
+}
+function bkCopy() {
+  const text = bkText();
+  const ok = () => { bkMark(); toast('Копия скопирована. Вставьте её в заметки или мессенджер'); };
+  const fallback = () => { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); ok(); } catch (e) { toast('Не удалось скопировать'); } ta.remove(); };
+  try { navigator.clipboard.writeText(text).then(ok, fallback); } catch (e) { fallback(); }
+}
+function bkRestore(text) {
+  let d;
+  try { d = JSON.parse(text); d = d.data || d; if (!Array.isArray(d.menu) || !Array.isArray(d.stock) || !Array.isArray(d.orders)) throw 0; } catch (e) { toast('Это не похоже на копию данных'); return; }
+  const old = S, oldCart = cart;
+  S = normalize(d); cart = {}; save(); renderAll(); $('#bk-text').value = '';
+  toast('Данные восстановлены', () => { S = old; cart = oldCart; save(); renderAll(); });
+}
+document.addEventListener('change', e => {
+  if (e.target.id !== 'bk-file' || !e.target.files[0]) return;
+  const r = new FileReader(); r.onload = () => bkRestore(r.result); r.readAsText(e.target.files[0]); e.target.value = '';
+});
 function csv() {
   const rows = [['№', 'Дата', 'Клиент', 'Состав', 'Сумма']].concat(soldIn(period).map(o => [o.num, new Date(o.sold).toLocaleString('ru-RU'), o.client, o.items.map(i => i.name + ' x' + i.qty).join('; '), orderSum(o)]));
   const text = '﻿' + rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(';')).join('\n');
@@ -736,6 +783,10 @@ document.addEventListener('click', e => {
     case 'tc-add-ing': { const m = S.menu.find(x => x.id === tcId); m.tc.ings.push(I('', 0, 'г', 0, 0, 0, 0, 0)); openTc(tcId); $$('#sheet [data-tc=name]').pop().focus(); break; }
     case 'tc-del-ing': { const m = S.menu.find(x => x.id === tcId); m.tc.ings.splice(+d.i, 1); save(); openTc(tcId); break; }
     case 'csv': csv(); break;
+    case 'bk-save': bkSave(); break;
+    case 'bk-copy': bkCopy(); break;
+    case 'bk-file': $('#bk-file').click(); break;
+    case 'bk-paste': bkRestore($('#bk-text').value); break;
     case 'shop-bought': { const s = S.stock.find(x => x.id === id), old = s.qty; s.qty = +(old + shopQty(s)).toFixed(3); save(); renderStock(); renderNav(); toast('Куплено: ' + s.name, () => { s.qty = old; save(); renderStock(); renderNav(); }); break; }
     case 'shop-copy': shopCopy(); break;
     case 'demo': demo(); break;
