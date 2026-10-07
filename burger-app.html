@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="6">
+<meta name="app-version" content="7">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#c9602f">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -219,6 +219,28 @@ textarea { min-height: 80px; resize: vertical; }
 .tc-card:last-child { border-bottom: none; }
 .tc-line { font-size: 14px; color: var(--text-2); margin: 4px 0 8px; }
 .tc-line b { color: var(--text); }
+/* finance */
+.pnl { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+.pnl:last-child { border-bottom: none; }
+.pnl.sub span:first-child { padding-left: 14px; color: var(--text-2); }
+.pnl b { white-space: nowrap; }
+.pnl.tot { font-size: 15px; }
+.pos { color: var(--ok-fg); } .neg { color: var(--bad-fg); }
+.chart { display: flex; align-items: flex-end; gap: 2px; height: 120px; padding-top: 6px; }
+.chart i { flex: 1; min-width: 3px; background: var(--primary); border-radius: 3px 3px 0 0; min-height: 2px; }
+.chart i.we { background: var(--info-fg); }
+.axis { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-2); margin-top: 4px; }
+.legend { font-size: 12px; color: var(--text-2); margin-top: 6px; }
+.dsh { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: center; font-size: 13px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.dsh:last-child { border-bottom: none; }
+.dsh .n { grid-column: 1 / -1; font-weight: 700; font-size: 14px; }
+.dsh span { color: var(--text-2); }
+.dsh b { white-space: nowrap; text-align: right; }
+.bar-row .top b { white-space: nowrap; }
+.bar-row .top span { padding-right: 8px; }
+.lg { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+.lg:last-child { border-bottom: none; }
+.lg b { white-space: nowrap; }
 /* bottom nav */
 .nav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 30; background: var(--surface); border-top: 1px solid var(--border); padding-bottom: env(safe-area-inset-bottom); }
 .nav-in { max-width: 1000px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); }
@@ -262,6 +284,8 @@ textarea { min-height: 80px; resize: vertical; }
 
     <!-- ПРОДАЖИ -->
     <section class="view" id="v-sales">
+      <div class="chips" id="ssub"><button class="chip on" data-ssub="orders">🧾 Продажи</button><button class="chip" data-ssub="fin">📊 Финансы</button></div>
+      <div id="s-orders">
       <div class="chips" id="period">
         <button class="chip on" data-p="day">Сегодня</button>
         <button class="chip" data-p="week">7 дней</button>
@@ -273,6 +297,25 @@ textarea { min-height: 80px; resize: vertical; }
         <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
           <button class="btn ghost sm" data-act="csv">Скопировать таблицу (CSV)</button>
           <button class="btn ghost sm" data-act="demo">Загрузить демо-данные</button>
+        </div>
+      </div>
+    </div>
+      <div id="s-fin" hidden>
+        <div class="chips" id="fperiod">
+          <button class="chip" data-fp="day">Сегодня</button><button class="chip" data-fp="week">7 дней</button><button class="chip on" data-fp="month">Месяц</button><button class="chip" data-fp="all">Всё время</button>
+        </div>
+        <div class="stats" id="f-stats"></div>
+        <div class="card"><h2>🧮 Как считается прибыль</h2><div id="f-pnl"></div></div>
+        <div class="card"><h2>💸 Движение денег</h2><div id="f-cash"></div></div>
+        <div class="card"><h2>📈 Выручка по дням</h2><div id="f-chart"></div></div>
+        <div class="card"><h2>🧾 Расходы по статьям</h2><div id="f-cats"></div></div>
+        <div class="card"><h2>🍔 Прибыль по блюдам</h2><div id="f-dishes"></div></div>
+        <div class="card"><h2>📒 Приходы и расходы</h2><div id="f-ledger"></div></div>
+        <div class="card"><h2>➕ Новая операция</h2>
+          <div class="chips" id="ftype" style="margin-bottom:8px"><button class="chip on" data-ft="out">Расход</button><button class="chip" data-ft="in">Приход</button></div>
+          <select id="fin-cat" aria-label="Статья"></select>
+          <div class="form-grid" style="grid-template-columns:1fr 1fr;margin-top:8px"><input id="fin-sum" type="number" inputmode="numeric" placeholder="Сумма, ₫" aria-label="Сумма"><input id="fin-note" placeholder="Комментарий" aria-label="Комментарий"></div>
+          <button class="btn block" style="margin-top:12px" data-act="add-fin">Добавить</button>
         </div>
       </div>
     </section>
@@ -409,7 +452,7 @@ const SEED = () => ({
     { id: 5, name: 'Картофель', qty: 8.5, unit: 'кг', min: 5 }
   ],
   preps: PREP_SEED(),
-  orders: [], seq: { menu: 5, stock: 6, order: 1, prep: 5 }
+  orders: [], fin: [], seq: { menu: 5, stock: 6, order: 1, prep: 5, fin: 1 }
 });
 
 let S;
@@ -417,7 +460,9 @@ try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
 if (!S || !S.menu) S = SEED();
 S.menu.forEach(m => { if (!m.tc) m.tc = TC_SEED[m.id] && SEED().menu.find(x => x.id === m.id && x.name === m.name) ? JSON.parse(JSON.stringify(TC_SEED[m.id])) : { time: 0, steps: '', ings: [] }; });
 if (!S.preps) { S.preps = PREP_SEED(); S.seq.prep = 5; }
+if (!S.fin) S.fin = []; if (!S.seq.fin) S.seq.fin = 1 + S.fin.length;
 const normalize = d => {
+  if (!d.fin) d.fin = []; d.seq = Object.assign({ fin: 1 }, d.seq);
   d.menu.forEach(m => { if (!m.tc) m.tc = { time: 0, steps: '', ings: [] }; });
   if (!d.preps) d.preps = []; d.seq = Object.assign({ menu: 1, stock: 1, order: 1, prep: 1 }, d.seq);
   return d;
@@ -443,6 +488,7 @@ const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch
 
 let cart = {};                       // dishId -> qty
 let meta = { client: '', type: 'here', note: '' };
+let ssub = 'orders', fperiod = 'month', ftype = 'out';
 let view = 'orders', sub = 'new', filter = 'all', period = 'day';
 
 const STATUS = {
@@ -459,6 +505,7 @@ const minsAgo = t => Math.max(0, Math.floor((Date.now() - t) / 60000));
 const startOf = p => {
   const d = new Date(); d.setHours(0, 0, 0, 0);
   if (p === 'week') d.setDate(d.getDate() - 6);
+  if (p === 'month') d.setDate(d.getDate() - 29);
   return p === 'all' ? 0 : d.getTime();
 };
 const soldIn = p => S.orders.filter(o => o.status === 'sold' && o.sold >= startOf(p));
@@ -522,7 +569,7 @@ function hideToast() { $('#toast').classList.remove('on'); }
 const buzz = () => { try { navigator.vibrate && navigator.vibrate(15); } catch (e) {} };
 
 /* ---------- render ---------- */
-function renderAll() { paintTheme(); paintScale(); renderBk(); $('#upd-info').textContent = 'Версия ' + APP_V(); renderTop(); renderTiles(); renderQueue(); renderSales(); renderMenu(); renderStock(); renderPrep(); renderTc(); renderNav(); }
+function renderAll() { paintTheme(); paintScale(); renderBk(); $('#upd-info').textContent = 'Версия ' + APP_V(); renderTop(); renderTiles(); renderQueue(); renderSales(); renderFin(); renderMenu(); renderStock(); renderPrep(); renderTc(); renderNav(); }
 
 function renderTop() {
   const s = soldIn('day');
@@ -580,6 +627,60 @@ function renderQueue() {
       <div class="o-actions"><button class="btn" data-act="next" data-n="${o.num}">${st.act}</button><button class="btn ghost" style="flex:0 0 auto" data-act="cancel" data-n="${o.num}" aria-label="Отменить заказ">✕</button></div>
     </div>`;
   }).join('') : `<div class="empty"><div class="big">🎉</div>${act.length ? 'В этом статусе заказов нет' : 'Очередь пуста. Новые заказы появятся здесь.'}</div>`;
+}
+
+
+/* ---------- finance ---------- */
+const FIN_OUT = [['Аренда', 'op'], ['Зарплата', 'op'], ['Коммунальные услуги', 'op'], ['Реклама', 'op'], ['Интернет и связь', 'op'], ['Оборудование и ремонт', 'op'], ['Налоги и сборы', 'op'], ['Прочее', 'op'], ['Закупка продуктов', 'stock']];
+const FIN_IN = ['Внесение в кассу', 'Прочий приход'];
+const finIsStock = cat => (FIN_OUT.find(x => x[0] === cat) || [])[1] === 'stock';
+const finIn = p => S.fin.filter(f => f.ts >= startOf(p)).sort((a, b) => b.ts - a.ts);
+const sgn = n => (n < 0 ? '−' : '') + money(Math.abs(n));
+function finCalc(p) {
+  const s = soldIn(p), f = finIn(p);
+  const rev = s.reduce((t, o) => t + orderSum(o), 0), cogs = s.reduce((t, o) => t + orderCost(o), 0);
+  const opex = f.filter(x => x.type === 'out' && !finIsStock(x.cat)).reduce((t, x) => t + x.sum, 0);
+  const buy = f.filter(x => x.type === 'out' && finIsStock(x.cat)).reduce((t, x) => t + x.sum, 0);
+  const other = f.filter(x => x.type === 'in').reduce((t, x) => t + x.sum, 0);
+  return { s, f, rev, cogs, gross: rev - cogs, opex, buy, other, net: rev - cogs - opex, cin: rev + other, cout: opex + buy };
+}
+const pct = (a, b) => b ? (a / b * 100).toFixed(1).replace('.', ',') + '%' : '—';
+const cls = n => n >= 0 ? 'pos' : 'neg';
+function renderFin() {
+  $$('#ssub .chip').forEach(c => c.classList.toggle('on', c.dataset.ssub === ssub));
+  $('#s-orders').hidden = ssub !== 'orders'; $('#s-fin').hidden = ssub !== 'fin';
+  $$('#fperiod .chip').forEach(c => c.classList.toggle('on', c.dataset.fp === fperiod));
+  $$('#ftype .chip').forEach(c => c.classList.toggle('on', c.dataset.ft === ftype));
+  const cats = ftype === 'out' ? FIN_OUT.map(x => x[0]) : FIN_IN;
+  const cur = $('#fin-cat').value; $('#fin-cat').innerHTML = cats.map(c => `<option>${esc(c)}</option>`).join(''); if (cats.includes(cur)) $('#fin-cat').value = cur;
+  const c = finCalc(fperiod);
+  $('#f-stats').innerHTML = [['Выручка', money(c.rev), ''], ['Себестоимость продаж', money(c.cogs), ''], ['Валовая прибыль', money(c.gross), cls(c.gross) + '|' + pct(c.gross, c.rev) + ' от выручки'], ['Чистая прибыль', sgn(c.net), cls(c.net) + '|' + pct(c.net, c.rev) + ' от выручки']]
+    .map(([l, v, x]) => { const [k, t] = x.split('|'); return `<div class="stat"><div class="l">${l}</div><div class="v ${k || ''}">${v}</div>${t ? `<div class="muted">${t}</div>` : ''}</div>`; }).join('');
+  const row = (l, v, o = {}) => `<div class="pnl ${o.sub ? 'sub' : ''} ${o.tot ? 'tot' : ''}"><span>${l}</span><b class="${o.c || ''}">${v}</b></div>`;
+  $('#f-pnl').innerHTML = row('Выручка (продано ' + c.s.length + ' заказов)', money(c.rev)) + row('− Себестоимость продуктов в проданных блюдах', sgn(-c.cogs), { sub: 1 }) + row('= Валовая прибыль', sgn(c.gross), { tot: 1, c: cls(c.gross) })
+    + row('− Расходы на работу (аренда, зарплата и т.д.)', sgn(-c.opex), { sub: 1 }) + row('= Чистая прибыль', sgn(c.net), { tot: 1, c: cls(c.net) })
+    + `<div class="muted" style="margin-top:8px">Закупка продуктов не вычитается второй раз: продукты уже учтены в себестоимости проданных блюд.</div>`;
+  $('#f-cash').innerHTML = row('Приход: выручка', money(c.rev)) + row('Приход: прочее', money(c.other)) + row('Всего пришло', money(c.cin), { tot: 1, c: 'pos' })
+    + row('Расход: закупка продуктов', money(c.buy)) + row('Расход: работа заведения', money(c.opex)) + row('Всего ушло', money(c.cout), { tot: 1, c: 'neg' })
+    + row('Итого по деньгам', sgn(c.cin - c.cout), { tot: 1, c: cls(c.cin - c.cout) });
+  // chart: revenue by day
+  const days = fperiod === 'day' ? 1 : fperiod === 'week' ? 7 : 30, day0 = new Date().setHours(0, 0, 0, 0), by = [];
+  for (let i = days - 1; i >= 0; i--) { const a = day0 - i * DAY; by.push({ a, v: soldIn('all').filter(o => o.sold >= a && o.sold < a + DAY).reduce((t, o) => t + orderSum(o), 0) }); }
+  const mx = Math.max(1, ...by.map(x => x.v)), best = by.reduce((m, x) => x.v > m.v ? x : m, by[0]), nz = by.filter(x => x.v > 0);
+  const dstr = a => new Date(a).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+  $('#f-chart').innerHTML = `<div class="chart" role="img" aria-label="Выручка по дням">${by.map(x => { const w = [0, 6].includes(new Date(x.a).getDay()); return `<i class="${w ? 'we' : ''}" style="height:${x.v / mx * 100}%" title="${dstr(x.a)}: ${money(x.v)}"></i>`; }).join('')}</div>
+    <div class="axis"><span>${dstr(by[0].a)}</span><span>${dstr(by[by.length - 1].a)}</span></div>
+    <div class="legend"><span style="color:var(--primary)">■</span> будни &nbsp; <span style="color:var(--info-fg)">■</span> выходные · Лучший день: ${dstr(best.a)} (${money(best.v)})${nz.length ? ' · В среднем в день: ' + money(nz.reduce((t, x) => t + x.v, 0) / nz.length) : ''}</div>`;
+  // expenses by category
+  const cat = {}; c.f.filter(x => x.type === 'out').forEach(x => { cat[x.cat] = (cat[x.cat] || 0) + x.sum; });
+  const ce = Object.entries(cat).sort((a, b) => b[1] - a[1]), tot = ce.reduce((t, x) => t + x[1], 0);
+  $('#f-cats').innerHTML = ce.length ? ce.map(([n, v]) => `<div class="bar-row"><div class="top"><span>${esc(n)}${finIsStock(n) ? ' <span class="muted">(в себестоимости)</span>' : ''}</span><b>${money(v)} · ${pct(v, tot)}</b></div><div class="bar"><i style="width:${v / ce[0][1] * 100}%"></i></div></div>`).join('') : '<div class="empty">Расходов за период нет</div>';
+  // by dish
+  const dish = {}; c.s.forEach(o => o.items.forEach(i => { const d = dish[i.name] = dish[i.name] || { q: 0, r: 0, c: 0 }; d.q += i.qty; d.r += i.qty * i.price; d.c += i.qty * (i.cost || 0); }));
+  const dl = Object.entries(dish).sort((a, b) => (b[1].r - b[1].c) - (a[1].r - a[1].c));
+  $('#f-dishes').innerHTML = dl.length ? dl.map(([n, d]) => `<div class="dsh"><div class="n">${esc(n)}</div><span>${d.q} шт · выручка ${money(d.r)}<br>себестоимость ${money(d.c)}</span><b class="${cls(d.r - d.c)}">${money(d.r - d.c)}<br><span style="font-weight:600">маржа ${pct(d.r - d.c, d.r)}</span></b></div>`).join('') : '<div class="empty">Нет продаж за период</div>';
+  // ledger
+  $('#f-ledger').innerHTML = c.f.length ? c.f.slice(0, 25).map(x => `<div class="lg"><div><b style="white-space:normal">${esc(x.cat)}</b><div class="muted">${dstr(x.ts)}${x.note ? ' · ' + esc(x.note) : ''}</div></div><div style="display:flex;align-items:center;gap:8px"><b class="${x.type === 'in' ? 'pos' : 'neg'}">${x.type === 'in' ? '+' : '−'}${money(x.sum)}</b><button class="icon-btn" style="width:36px;height:36px" data-act="del-fin" data-id="${x.id}" aria-label="Удалить операцию">✕</button></div></div>`).join('') + (c.f.length > 25 ? `<div class="muted" style="margin-top:8px">Показаны последние 25 из ${c.f.length}</div>` : '') : '<div class="empty">Операций нет. Добавьте расход или приход ниже.</div>';
 }
 
 function renderSales() {
@@ -809,12 +910,32 @@ function DEMO() {
   }
   const live = [['new', 3, 'Анна', 'here', 'Без лука'], ['new', 1, 'Стол 3', 'here', ''], ['cook', 22, 'Минь', 'go', 'Соус отдельно'], ['cook', 7, 'Стол 1', 'here', ''], ['ready', 12, 'Олег', 'go', ''], ['ready', 4, '', 'go', 'Поострее']];
   live.forEach(([status, ago, client, type, note]) => orders.push({ num: num++, client, type, note, items: basket(), status, created: n - ago * 60e3, sold: null }));
-  return { menu, stock, preps, orders, seq: { menu: 9, stock: 15, order: num, prep: 8 } };
+  const fin = []; let fid = 1;
+  const at = (daysAgo, h = 10) => midnight - daysAgo * DAY + h * 3600e3;
+  const add = (daysAgo, type, cat, sum, note, h) => fin.push({ id: fid++, ts: at(daysAgo, h), type, cat, note: note || '', sum: Math.round(sum / 1000) * 1000 });
+  add(30, 'in', 'Внесение в кассу', 15000000, 'Стартовый остаток в кассе', 9);
+  add(28, 'out', 'Аренда', 20000000, 'Аренда помещения за месяц', 9);
+  add(26, 'out', 'Оборудование и ремонт', 2400000, 'Новая решётка-гриль, ремонт вытяжки', 11);
+  add(24, 'out', 'Реклама', 1500000, 'Таргет в Instagram', 12);
+  add(21, 'out', 'Коммунальные услуги', 3200000, 'Электричество, вода, газ', 10);
+  add(20, 'out', 'Интернет и связь', 350000, 'Интернет и SIM', 10);
+  add(14, 'out', 'Зарплата', 22000000, 'Зарплата за 2 недели: повар, помощник, кассир', 20);
+  add(9, 'out', 'Реклама', 1200000, 'Объявления в Grab и Google Maps', 12);
+  add(6, 'out', 'Налоги и сборы', 1800000, 'Налог и лицензия', 11);
+  add(5, 'in', 'Прочий приход', 850000, 'Заказ на мероприятие, предоплата', 15);
+  add(1, 'out', 'Зарплата', 22000000, 'Зарплата за 2 недели: повар, помощник, кассир', 20);
+  add(0, 'out', 'Прочее', 280000, 'Моющие средства, перчатки, салфетки', 9);
+  for (let d = 29; d >= 0; d -= 3) {
+    const a = midnight - d * DAY, c = orders.filter(o => o.status === 'sold' && o.sold >= a - 3 * DAY && o.sold < a).reduce((t, o) => t + orderCost(o), 0);
+    if (c > 0) add(d, 'out', 'Закупка продуктов', c * (.95 + rnd() * .15), 'Рынок и поставщик мяса', 8);
+  }
+  fin.sort((x, y) => x.ts - y.ts); fin.forEach((f, i) => { f.id = i + 1; });
+  return { menu, stock, preps, orders, fin, seq: { menu: 9, stock: 15, order: num, prep: 8, fin: fin.length + 1 } };
 }
 function demo() {
   const old = S, oldCart = cart;
   S = DEMO(); cart = {}; save(); renderAll();
-  toast('Демо-данные загружены: 8 блюд, склад, заготовки и заказы за 30 дней', () => { S = old; cart = oldCart; save(); renderAll(); });
+  toast('Демо-данные загружены: меню, склад, заготовки, заказы и финансы за 30 дней', () => { S = old; cart = oldCart; save(); renderAll(); });
 }
 
 function shopCopy() {
@@ -885,6 +1006,9 @@ document.addEventListener('click', e => {
   if (d.view) { view = d.view; renderNav(); scrollTo(0, 0); return; }
   if (d.sub) { sub = d.sub; renderNav(); return; }
   if (d.scale) { document.documentElement.style.zoom = d.scale; try { localStorage.setItem('burger-scale', d.scale); } catch (e) {} paintScale(); return; }
+  if (d.ssub) { ssub = d.ssub; renderFin(); return; }
+  if (d.fp) { fperiod = d.fp; renderFin(); return; }
+  if (d.ft) { ftype = d.ft; renderFin(); return; }
   if (d.msub) { msub = d.msub; renderTc(); return; }
   if (d.filter) { filter = d.filter; renderQueue(); return; }
   if (d.p) { period = d.p; renderSales(); return; }
@@ -925,6 +1049,11 @@ document.addEventListener('click', e => {
     case 'shop-copy': shopCopy(); break;
     case 'demo': demo(); break;
     case 'theme': toggleTheme(); break;
+    case 'add-fin': {
+      const sum = +$('#fin-sum').value; if (!(sum > 0)) { toast('Укажите сумму'); return; }
+      S.fin.push({ id: S.seq.fin++, ts: Date.now(), type: ftype, cat: $('#fin-cat').value, note: $('#fin-note').value.trim(), sum });
+      $('#fin-sum').value = $('#fin-note').value = ''; save(); renderFin(); toast(ftype === 'in' ? 'Приход добавлен' : 'Расход добавлен'); break; }
+    case 'del-fin': { const f = S.fin.find(x => x.id === id); S.fin = S.fin.filter(x => x.id !== id); save(); renderFin(); toast('Операция удалена', () => { S.fin.push(f); save(); renderFin(); }); break; }
     case 'stock': { const s = S.stock.find(x => x.id === id); const step = s.unit === 'шт' ? 10 : 0.5; s.qty = Math.max(0, +(s.qty + step * +d.d).toFixed(2)); save(); renderStock(); renderNav(); break; }
     case 'del-dish': { const m = S.menu.find(x => x.id === id), q = cart[id]; S.menu = S.menu.filter(x => x.id !== id); delete cart[id]; save(); renderAll(); toast('Блюдо «' + m.name + '» удалено', () => { S.menu.push(m); S.menu.sort((a, b) => a.id - b.id); if (q) cart[id] = q; save(); renderAll(); }); break; }
     case 'add-dish': {
