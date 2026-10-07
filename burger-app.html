@@ -2,14 +2,14 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="4">
+<meta name="app-version" content="5">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#c9602f">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <title>Burger Shop</title>
 <script>
-try { var th = localStorage.getItem('burger-theme'); if (th === 'light' || th === 'dark') document.documentElement.dataset.theme = th; } catch (e) {}
+try { var sc = parseFloat(localStorage.getItem('burger-scale')); document.documentElement.style.zoom = (sc >= .8 && sc <= 1.1) ? sc : .92; var th = localStorage.getItem('burger-theme'); if (th === 'light' || th === 'dark') document.documentElement.dataset.theme = th; } catch (e) {}
 </script>
 <style>
 :root {
@@ -49,7 +49,7 @@ try { var th = localStorage.getItem('burger-theme'); if (th === 'light' || th ==
 }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.45; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.4; }
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; border: none; background: none; }
 :focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
@@ -65,7 +65,11 @@ button { cursor: pointer; border: none; background: none; }
 main { flex: 1; padding: 14px 16px 150px; }
 .view { display: none; } .view.on { display: block; }
 
-h2 { font-size: 17px; margin: 4px 0 10px; }
+summary { cursor: pointer; font-size: 16px; font-weight: 800; min-height: 32px; display: flex; align-items: center; list-style: none; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: '▾'; margin-left: auto; color: var(--text-2); }
+details[open] > summary::after { content: '▴'; }
+h2 { font-size: 16px; margin: 4px 0 10px; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 14px; box-shadow: var(--shadow); }
 .muted { color: var(--text-2); font-size: 13px; }
 .empty { text-align: center; padding: 24px 12px; color: var(--text-2); }
@@ -287,8 +291,8 @@ textarea { min-height: 80px; resize: vertical; }
         <label class="f" for="nm-price">Цена, ₫</label><input id="nm-price" type="number" inputmode="numeric" placeholder="165000">
         <button class="btn block" style="margin-top:12px" data-act="add-dish">Добавить в меню</button>
       </div>
-      <div class="card"><h2>💾 Резервная копия</h2>
-        <div class="muted" id="bk-info" style="margin-bottom:8px"></div>
+      <details class="card spoiler"><summary>💾 Резервная копия</summary>
+        <div class="muted" id="bk-info" style="margin:10px 0 8px"></div>
         <div style="display:grid;gap:8px">
           <button class="btn block" data-act="bk-save">Скачать копию (файл)</button>
           <button class="btn ghost block" data-act="bk-copy">Скопировать копию (текст)</button>
@@ -297,6 +301,9 @@ textarea { min-height: 80px; resize: vertical; }
           <textarea id="bk-text" placeholder="Или вставьте сюда скопированную копию" aria-label="Текст копии"></textarea>
           <button class="btn ghost block" data-act="bk-paste">Восстановить из текста</button>
         </div>
+      </details>
+      <div class="card"><h2>🔠 Размер интерфейса</h2>
+        <div class="chips" id="scale" style="margin:0"><button class="chip" data-scale="0.85">Мелкий</button><button class="chip" data-scale="0.92">Средний</button><button class="chip" data-scale="1">Крупный</button></div>
       </div>
       <div class="card"><h2>🔄 Обновление</h2>
         <div class="muted" id="upd-info" style="margin-bottom:8px"></div>
@@ -416,6 +423,10 @@ function paintTheme() {
   b.textContent = d ? '☀️' : '🌙'; b.setAttribute('aria-label', d ? 'Включить светлую тему' : 'Включить тёмную тему');
   document.querySelector('meta[name=theme-color]').content = d ? '#1c1815' : '#c9602f';
 }
+function paintScale() {
+  const z = parseFloat(document.documentElement.style.zoom) || .92;
+  $$('#scale .chip').forEach(c => c.classList.toggle('on', Math.abs(+c.dataset.scale - z) < .01));
+}
 function toggleTheme() {
   const next = isDark() ? 'light' : 'dark';
   document.documentElement.dataset.theme = next;
@@ -506,7 +517,7 @@ function hideToast() { $('#toast').classList.remove('on'); }
 const buzz = () => { try { navigator.vibrate && navigator.vibrate(15); } catch (e) {} };
 
 /* ---------- render ---------- */
-function renderAll() { paintTheme(); renderBk(); $('#upd-info').textContent = 'Версия ' + APP_V(); renderTop(); renderTiles(); renderQueue(); renderSales(); renderMenu(); renderStock(); renderPrep(); renderTc(); renderNav(); }
+function renderAll() { paintTheme(); paintScale(); renderBk(); $('#upd-info').textContent = 'Версия ' + APP_V(); renderTop(); renderTiles(); renderQueue(); renderSales(); renderMenu(); renderStock(); renderPrep(); renderTc(); renderNav(); }
 
 function renderTop() {
   const s = soldIn('day');
@@ -839,19 +850,20 @@ document.addEventListener('change', e => {
   const r = new FileReader(); r.onload = () => bkRestore(r.result); r.readAsText(e.target.files[0]); e.target.value = '';
 });
 const APP_V = () => document.querySelector('meta[name=app-version]').content;
-async function checkUpdate() {
+async function checkUpdate(quiet) {
   const info = $('#upd-info');
-  if (!/^https?:/.test(location.protocol)) { toast('Проверка работает, когда приложение открыто по ссылке'); return; }
-  info.textContent = 'Проверяю…';
+  if (!/^https?:/.test(location.protocol)) { if (!quiet) toast('Проверка работает, когда приложение открыто по ссылке'); return; }
+  if (!quiet) info.textContent = 'Проверяю…';
   try {
     const r = await fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' });
     if (!r.ok) throw 0;
     const v = (/name="app-version" content="([^"]+)"/.exec(await r.text()) || [])[1];
     if (!v) throw 0;
-    if (v === APP_V()) { info.textContent = 'Версия ' + APP_V() + '. Это последняя версия.'; toast('Обновлений нет'); return; }
+    if (v === APP_V()) { info.textContent = 'Версия ' + APP_V() + '. Это последняя версия.'; if (!quiet) toast('Обновлений нет. Если вы только что просили обновление, подождите 1–2 минуты: сайт публикуется не сразу'); return; }
+    if (quiet && Object.keys(cart).length) { toast('Есть новая версия. После заказа нажмите «Проверить обновления» на вкладке «Меню»'); return; }
     save(); info.textContent = 'Найдена версия ' + v + ', обновляю…'; toast('Обновляю до версии ' + v + '. Данные сохранены');
     setTimeout(() => location.replace(location.pathname + '?v=' + Date.now()), 900);
-  } catch (e) { info.textContent = 'Версия ' + APP_V() + '. Не удалось проверить: нет сети?'; toast('Не удалось проверить обновления'); }
+  } catch (e) { if (!quiet) { info.textContent = 'Версия ' + APP_V() + '. Не удалось проверить: нет сети?'; toast('Не удалось проверить обновления'); } }
 }
 function csv() {
   const rows = [['№', 'Дата', 'Клиент', 'Состав', 'Сумма']].concat(soldIn(period).map(o => [o.num, new Date(o.sold).toLocaleString('ru-RU'), o.client, o.items.map(i => i.name + ' x' + i.qty).join('; '), orderSum(o)]));
@@ -867,6 +879,7 @@ document.addEventListener('click', e => {
   const d = t.dataset, id = +d.id;
   if (d.view) { view = d.view; renderNav(); scrollTo(0, 0); return; }
   if (d.sub) { sub = d.sub; renderNav(); return; }
+  if (d.scale) { document.documentElement.style.zoom = d.scale; try { localStorage.setItem('burger-scale', d.scale); } catch (e) {} paintScale(); return; }
   if (d.msub) { msub = d.msub; renderTc(); return; }
   if (d.filter) { filter = d.filter; renderQueue(); return; }
   if (d.p) { period = d.p; renderSales(); return; }
@@ -945,6 +958,7 @@ document.addEventListener('change', e => {
 $('#sheet-bg').addEventListener('click', e => { if (e.target.id === 'sheet-bg') { syncMeta(); closeSheet(); } });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { syncMeta(); closeSheet(); } });
 matchMedia('(min-width:860px)').addEventListener('change', renderNav);
+setTimeout(() => checkUpdate(true), 1500);
 setInterval(() => { if (view === 'orders') renderQueue(); }, 30000);
 
 renderAll();
