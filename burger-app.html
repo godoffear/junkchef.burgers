@@ -2,11 +2,16 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="5">
+<meta name="app-version" content="6">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#c9602f">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Burger Shop">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>Burger Shop</title>
 <script>
 try { var sc = parseFloat(localStorage.getItem('burger-scale')); document.documentElement.style.zoom = (sc >= .8 && sc <= 1.1) ? sc : .92; var th = localStorage.getItem('burger-theme'); if (th === 'light' || th === 'dark') document.documentElement.dataset.theme = th; } catch (e) {}
@@ -959,6 +964,7 @@ $('#sheet-bg').addEventListener('click', e => { if (e.target.id === 'sheet-bg') 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { syncMeta(); closeSheet(); } });
 matchMedia('(min-width:860px)').addEventListener('change', renderNav);
 setTimeout(() => checkUpdate(true), 1500);
+if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
 setInterval(() => { if (view === 'orders') renderQueue(); }, 30000);
 
 renderAll();
